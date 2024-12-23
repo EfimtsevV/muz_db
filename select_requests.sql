@@ -1,3 +1,4 @@
+
 --select запросы (задание 2)
 
 --Название и продолжительность самого длинного трека
@@ -21,10 +22,30 @@ select name_executor
 from executor
 where name_executor not like '% %' and name_executor not like '%-%';
 
+select name_track 
+from track;
+
 --Название треков, которые содержат слово «мой» или «my».
+--Основной способ реализации на основе полученных знаний, который вы подсказали у меня полностью реализовать не получилось, нашел другой способ
+
 select name_track
 from track 
-where name_track like '%Мой%' or name_track like '%My%' or name_track like '%мой%' or name_track like '%my%';
+where name_track ilike '%мой %' 
+or name_track ilike '% мой %' 
+or name_track ilike '% мой%'
+or name_track ilike 'мой'
+or name_track ilike '%my %' 
+or name_track ilike '% my%'
+or name_track ilike '% my %'
+or name_track ilike 'my';
+
+
+--Второй способ(рабочий)
+
+SELECT name_track
+FROM track
+WHERE name_track ~* '\mмой\M'
+   OR name_track ~* '\mmy\M';
 
 --select запросы (задание 3)
 
@@ -50,11 +71,16 @@ group by a.id_album, a.name_album
 order by avg_length desc;
 
 --Все исполнители, которые не выпустили альбомы в 2020 году.
-SELECT  distinct e.name_executor 
-FROM executor e
-LEFT JOIN executor_album ea ON e.id_executor = ea.id_executor
-LEFT JOIN album a ON a.id_album = ea.id_album AND a.year_release = 2020
-WHERE a.id_album IS NULL;
+--Согласно условию, в выборку не должны попасть исполнители, у которых есть альбомы, выпущенные в 20-м году.
+--Т.е. если у исполнителя, например, есть два альбома, один из которых выпущен в 20-м году, а другой в любом другом, то такой исполнитель не должен попасть в выборку.
+--Данный запрос реализуется через вложенный запрос, где получаем исполнителей, которые выпустили альбомы в 20-м году, а потом выводим тех, кто не попадает в этот список.
+
+select  distinct e.name_executor 
+from executor e
+left join executor_album ea ON e.id_executor = ea.id_executor
+left join album a ON a.id_album = ea.id_album AND a.year_release = 2020
+group by e.name_executor
+HAVING  COUNT(a.id_album) = 0;
 
 --Названия сборников, в которых присутствует конкретный исполнитель (Баста).
 select distinct c.id_collection, c.name_collection
@@ -67,13 +93,15 @@ where e.name_executor = 'Баста'
 order by c.id_collection;
 
 --select запросы (4 задание)
---Названия альбомов, в которых присутствуют исполнители более чем одного жанра. Выводит альбомы Басты т.к он поет в двух жанрах.
+
+--Названия альбомов, в которых присутствуют исполнители более чем одного жанра. 
 select a.name_album
 from album a 
 join executor_album ea on a.id_album = ea.id_album 
 join genre_executor ge on ea.id_executor = ge.id_executor 
-group by a.id_album, a.name_album 
+group by a.id_album, a.name_album, ea.id_executor
 having count(distinct ge.id_genre) > 1;
+
 
 --Наименования треков, которые не входят в сборники.
 select t.id_track, t.name_track
